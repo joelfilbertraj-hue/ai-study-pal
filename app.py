@@ -65,12 +65,6 @@ body { margin:0; font-family: Arial, sans-serif; }
     padding: 25px;
     border-radius: 12px;
     box-shadow: 0 10px 25px rgba(0,0,0,0.25);
-    animation: fadeIn 0.6s ease-in-out;
-}
-
-@keyframes fadeIn {
-    from { opacity:0; transform: translateY(10px); }
-    to { opacity:1; transform: translateY(0); }
 }
 
 select, button {
@@ -159,12 +153,18 @@ def quiz():
 
     if request.method == "POST":
         score = 0
+        focus_areas = []
+
         for i in range(len(questions)):
             ans = request.form.get(f"q{i}")
+
             if ans == "strong":
                 score += 2
             elif ans == "partial":
                 score += 1
+                focus_areas.append(questions[i]["text"])
+            elif ans == "weak":
+                focus_areas.append(questions[i]["text"])
 
         total = len(questions) * 2
         percent = (score / total) * 100
@@ -179,6 +179,7 @@ def quiz():
         session["score"] = score
         session["total"] = total
         session["remark"] = remark
+        session["focus_areas"] = focus_areas
 
         return redirect(url_for("remarks"))
 
@@ -217,6 +218,13 @@ def report():
     if "score" not in session:
         return redirect(url_for("intro"))
 
+    focus_html = ""
+    if session.get("focus_areas"):
+        focus_html = "<h3>Areas to Focus On</h3><ul>"
+        for area in session["focus_areas"]:
+            focus_html += f"<li>{area}</li>"
+        focus_html += "</ul>"
+
     content = f"""
     <div class="container">
         <h2>Final Learning Report</h2>
@@ -225,6 +233,7 @@ def report():
         <p><b>Final Score:</b> {session['score']} / {session['total']}</p>
         <hr>
         <p><i>{session['remark']}</i></p>
+        {focus_html}
         <br>
         <a href="{url_for('intro')}"><button>Take Another Quiz</button></a>
     </div>
